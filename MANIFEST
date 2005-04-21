@@ -3,4 +3,8 @@ Makefile.PL
 MANIFEST
 README
 t/Math-TriangularNumbers.t
+t/T.t
+t/Ti.t
+t/example.t
+t/is_T.t
 lib/Math/TriangularNumbers.pm

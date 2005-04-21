@@ -8,3 +8,7 @@ Revision history for Perl extension Math::TriangularNumbers.
 0.02  Sat Feb 26 2005
 	Renamed A() -> T() and AInv -> Ti().
 	Added is_T().
+
+0.03  Sun Mar 06 2005
+	Change "inverse" function to be right triangular index, not
+	left.  Edit POD.

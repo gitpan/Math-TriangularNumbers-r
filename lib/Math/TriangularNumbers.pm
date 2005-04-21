@@ -1,22 +1,22 @@
 #######################################################################
-# $Id: TriangularNumbers.pm,v 1.6 2005/02/27 02:36:08 dpchrist Exp $
+# $Id: TriangularNumbers.pm,v 1.7 2005/03/06 19:41:01 dpchrist Exp $
 
 =head1 NAME
 
 Math::TriangularNumbers - Perl extension for Triangular numbers.
 
-Version 0.02
+Version 0.03
 
 
 =head1 SYNOPSIS
 
   use Math::TriangularNumbers qw(T Ti is_T);
   
-  ##### prints the first four Triangular numbers "1, 3, 6, 10"
-  print STDERR join(", ", T(1), T(2), T(3), T(4)), "\n";
+  ##### prints Triangular numbers "1, 3, 6, 10, 15, 21"
+  print STDERR join(", ",T(1),T(2),T(3),T(4),T(5),T(6)), "\n";
 
-  ##### prints their indices "1, 2, 3, 4":
-  print STDERR join(", ", Ti(1), Ti(3), Ti(6), Ti(10)), "\n";
+  ##### prints right Triangular indices "1, 2, 2, 3, 3, 3":
+  print STDERR join(", ",Ti(1),Ti(2),Ti(3),Ti(4),Ti(5),Ti(6)), "\n";
   
   ##### determines if the number 666 is triangular (it is):
   print STDERR is_T(666) ? "yes\n" : "no\n";
@@ -26,39 +26,44 @@ Version 0.02
 
 I was using the following function for games:
 
-    T($n) = 1 + 2 + ... + ($n-1) + $n
+    T(n) = 1 + 2 + ... + (n-1) + n
 
-         = $n * ($n+1) / 2
+         = n * (n+1) / 2
 
 For example:
 
-    T(1) = 1
-    T(2) = 3
-    T(3) = 6
+    T(1) =  1
+    T(2) =  3
+    T(3) =  6
     T(4) = 10
+    T(5) = 15
+    T(6) = 21
+    etc.
 
-I suspected that there must be proper math terminology for the above.
-So when I wanted to implement it as a Perl module for posting on CPAN,
-I did some research.
-Sure enough they're called Triangular numbers,
-after Pascal's Triangle:
+These are called Triangular numbers, after Pascal's Triangle:
 
-			    1
-			1	1
-		    1	    2	    1
-		1	3	3	1
-	    1	    4	    6	    4	    1
-	1	5	10	10	5	1
+				1
+			    1       1
+			1       2       1
+		    1       3       3       1
+		1       4       6       4       1
+	    1       5      10      10       5       1
+	1       6      15      20      15       6       1
+    1       7      21      35      35      21       7       1
 
-Observe the diagonal numbers starting at the third row: 1, 3, 6, 10.
+Observe the diagonal numbers starting at the third row:
+1, 3, 6, 10, 15, 21.
 
-This module implements the function T(), given by the above equation,
-and it's inverse, Ti(), given by:
+This module implements the function T(n), given by the above equation,
+and it's "right inverse", T'(N), given by:
 
-	Ti($T) = $n = (-1 + sqrt(1 + 8*$T)) / 2
+	T'(N) = int( (1 + sqrt(1 + 8*(N-1))) / 2 )
 
-Furthermore, I have extended the definition of a Triangular number
-so that the functions include zero and negative arguments.
+E.g.  Given an integer N which is not necessarily a Triangular Number,
+find n such that T(n-1) < N <= T(n). 
+
+I have extended the definition of a Triangular number
+to include zero and negative indices and integers.
 
 
 =head2 EXPORT
@@ -102,7 +107,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw();
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 our $debug = 0;
 
@@ -114,7 +119,7 @@ our $debug = 0;
 
 =head3 T($n)
 
-Function that returns the $n-th Triangular number.
+Returns the $n-th Triangular number.
 Croaks if passed a non-integer argument.
 Note that T(0) = 0, and T(-$n) = -T($n).
 
@@ -142,10 +147,9 @@ sub T
 
 #----------------------------------------------------------------------
 
-=head3 Ti($T)
+=head3 Ti($N)
 
-Function that returns index of the Triangular number
-equal to or less than $T.
+Returns right Triangular index of $N.
 Croaks if passed a non-integer argument.
 Note that Ti(0) = 0, and Ti(-$T) = -Ti($T).
 
@@ -153,17 +157,19 @@ Note that Ti(0) = 0, and Ti(-$T) = -Ti($T).
 
 sub Ti
 {
-    my $T = shift;
+    my $N = shift;
     print STDERR (caller(0))[3], ": ",
-	Data::Dumper->Dump([$T], [qw(T)]), "\n"
+	Data::Dumper->Dump([$N], [qw(N)]), "\n"
 	if $debug;
 
-    croak "'$T' is not an integer"
-	unless $T =~ /^-?\d+$/;
+    croak "'$N' is not an integer"
+	unless $N =~ /^-?\d+$/;
     
-    my $n = 0 < $T
-	?  int((-1 + sqrt(1 + 8*$T)) / 2)
-	: -int((-1 + sqrt(1 - 8*$T)) / 2); #### let T'(-T) = -T'(T)
+    my $n = ($N == 0)
+	    ? 0
+	    : (0 < $N)
+	      ?  int((1 + sqrt(1 + 8*($N-1))) / 2)
+	      : -int((1 + sqrt(1 - 8*($N+1))) / 2); ### T'(-N) = -T'(N)
 
     print STDERR (caller(0))[3], ": ",
 	Data::Dumper->Dump([$n], [qw(n)]), "\n"
@@ -173,27 +179,27 @@ sub Ti
 
 #----------------------------------------------------------------------
 
-=head3 is_T($x)
+=head3 is_T($N)
 
-Function that returns true if $x is a Triangular number,
-if $x is zero,
-or if $x is the negative of a Triangular number.
-Otherwise, returns false.
+Returns true if $N is a Triangular number,
+if $N is zero,
+or if -$N is a Triangular number,
+otherwise returns false.
 Croaks if passed a non-integer argument.
 
 =cut
 
 sub is_T
 {
-    my $x = shift;
+    my $N = shift;
     print STDERR (caller(0))[3], ": ",
-	Data::Dumper->Dump([$x], [qw(x)]), "\n"
+	Data::Dumper->Dump([$N], [qw(x)]), "\n"
 	if $debug;
 
-    croak "'$x' is not an integer"
-	unless $x =~ /^-?\d+$/;
+    croak "'$N' is not an integer"
+	unless $N =~ /^-?\d+$/;
     
-    my $r = (T(Ti($x)) == $x);
+    my $r = (T(Ti($N)) == $N);
     
     print STDERR (caller(0))[3], ": ",
 	Data::Dumper->Dump([$r], [qw(r)]), "\n"
